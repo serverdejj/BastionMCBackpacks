@@ -44,6 +44,10 @@ import java.util.stream.Collectors;
 
 public final class BastionMCBackpacks extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {
     private static final int MAX = 25;
+    private static final List<Integer> LEGACY_MENU_SLOTS = List.of(10,11,12,13,14,19,20,21,22,23,28,29,30,31,32,37,38,39,40,41,46,47,48,49,50);
+    private static final List<Integer> PREVIOUS_MENU_SLOTS = List.of(2,3,4,5,6,11,12,13,14,15,20,21,22,23,24,29,30,31,32,33,39,40,41,42,43);
+    private static final List<Integer> LAST_MENU_SLOTS = List.of(2,3,4,5,6,11,12,13,14,15,20,21,22,23,24,29,30,31,32,33,38,39,40,41,42);
+    private static final List<Integer> NEW_MENU_SLOTS = List.of(10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40);
     private static final Pattern HEX = Pattern.compile("&#([0-9a-fA-F]{6})");
     private FileConfiguration messages;
     private File dataDir;
@@ -68,6 +72,7 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
 
     @Override public void onEnable() {
         saveDefaultConfig();
+        migrateMenuLayout();
         if (!new File(getDataFolder(), "messages.yml").exists()) saveResource("messages.yml", false);
         messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
         dataDir = new File(getDataFolder(), "data");
@@ -84,6 +89,25 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
         if (autosave != null) autosave.cancel();
         saveAll();
         loaded.clear();
+    }
+
+    // Update only the exact old default layout; keep hand-customized slots intact.
+    private void migrateMenuLayout() {
+        boolean changed = false;
+        if (getConfig().getIntegerList("menu.slots").equals(LEGACY_MENU_SLOTS)
+                || getConfig().getIntegerList("menu.slots").equals(PREVIOUS_MENU_SLOTS)
+                || getConfig().getIntegerList("menu.slots").equals(LAST_MENU_SLOTS)) {
+            getConfig().set("menu.slots", NEW_MENU_SLOTS);
+            changed = true;
+        }
+        if ("GRAY_STAINED_GLASS_PANE".equalsIgnoreCase(getConfig().getString("menu.filler.material", ""))) {
+            getConfig().set("menu.filler.material", "BLACK_STAINED_GLASS_PANE");
+            changed = true;
+        }
+        if (changed) {
+            saveConfig();
+            getLogger().info("Menu de mochilas actualizado: bordes de cristal negro y ultima fila reubicada.");
+        }
     }
 
     private String color(String value) {
@@ -157,13 +181,13 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
                 render(getConfig().getString("menu.title", "Mochilas"), 0, 0, unlocked(p)));
         Inventory menu = holder.inventory;
         if (getConfig().getBoolean("menu.filler.enabled", true)) {
-            ItemStack filler = new ItemStack(material("menu.filler.material", "GRAY_STAINED_GLASS_PANE"));
+            ItemStack filler = new ItemStack(material("menu.filler.material", "BLACK_STAINED_GLASS_PANE"));
             ItemMeta meta = filler.getItemMeta();
             if (meta != null) { meta.setDisplayName(color(getConfig().getString("menu.filler.name", " "))); filler.setItemMeta(meta); }
             for (int i = 0; i < guiSize; i++) menu.setItem(i, filler);
         }
         List<Integer> slots = getConfig().getIntegerList("menu.slots");
-        if (slots.size() < MAX) slots = Arrays.asList(10,11,12,13,14,19,20,21,22,23,28,29,30,31,32,37,38,39,40,41,46,47,48,49,50);
+        if (slots.size() < MAX) slots = NEW_MENU_SLOTS;
         for (int i = 1; i <= MAX; i++) {
             int slot = slots.get(i - 1);
             if (slot >= 0 && slot < guiSize) menu.setItem(slot, menuItem(permitted(p, i), i));
@@ -173,7 +197,7 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
 
     private int numberForSlot(int slot) {
         List<Integer> slots = getConfig().getIntegerList("menu.slots");
-        if (slots.size() < MAX) slots = Arrays.asList(10,11,12,13,14,19,20,21,22,23,28,29,30,31,32,37,38,39,40,41,46,47,48,49,50);
+        if (slots.size() < MAX) slots = NEW_MENU_SLOTS;
         for (int i = 0; i < MAX; ++i) if (slots.get(i) == slot) return i + 1;
         return -1;
     }

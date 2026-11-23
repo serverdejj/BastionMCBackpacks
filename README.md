@@ -34,3 +34,16 @@ Sube el **contenido** del ZIP a la raíz del repositorio, incluyendo `.github/wo
 No necesita Vault ni PlaceholderAPI; funciona con permisos de LuckPerms a través de Bukkit.
 
 **Importante:** no borres la carpeta `data/` en futuras actualizaciones. Este proyecto no ha sido compilado ni probado directamente en un servidor Purpur 1.21.11.
+
+## v1.0.1 — Menu actualizado
+
+- Menu de 54 slots, con ultima fila decorativa de cristal negro (slots 45–53).
+- Mochilas 21–25 movidas una columna a la izquierda en la quinta fila (slots 38–42).
+- Al actualizar desde v1.0.0, si la config conserva las posiciones y el cristal predeterminados, se migran automaticamente. Configuraciones personalizadas se respetan.
+- Mantiene sin cambios archivos de data, permisos y capacidades de las 25 mochilas.
+
+## Diseno v1.0.3
+- GUI de 54 espacios con bordes de cristal negro.
+- 25 barriles en slots: 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40 (indices desde 0).
+- La ultima hilera se desplazo un espacio a la izquierda.
+- Migra automaticamente configuraciones de menu predeterminadas anteriores, sin cambiar posiciones personalizadas ni datos guardados de las mochilas.

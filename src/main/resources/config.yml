@@ -4,11 +4,12 @@
 menu:
   title: '&#55DDAA&lTus Mochilas &8(&f{unlocked}&8/&f25&8)'
   size: 54
-  # 25 posiciones modificables. Indices de 0 a 53.
-  slots: [10, 11, 12, 13, 14, 19, 20, 21, 22, 23, 28, 29, 30, 31, 32, 37, 38, 39, 40, 41, 46, 47, 48, 49, 50]
+  # 25 posiciones modificables. Indices de 0 a 53. Ultima fila (45-53) es cristal negro.
+  # Bordes decorados con cristal negro; mochilas 22-25 en slots 37-40 (movidas 1 a la izquierda).
+  slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40]
   filler:
     enabled: true
-    material: GRAY_STAINED_GLASS_PANE
+    material: BLACK_STAINED_GLASS_PANE
     name: ' '
   unlocked:
     material: BARREL
