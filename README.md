@@ -47,3 +47,13 @@ No necesita Vault ni PlaceholderAPI; funciona con permisos de LuckPerms a travé
 - 25 barriles en slots: 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40 (indices desde 0).
 - La ultima hilera se desplazo un espacio a la izquierda.
 - Migra automaticamente configuraciones de menu predeterminadas anteriores, sin cambiar posiciones personalizadas ni datos guardados de las mochilas.
+
+
+## v1.0.4: Administrar mochilas y reload
+- `/mochilas ver <jugador>`: menú de las 25 mochilas de un jugador conocido (conectado o desconectado).
+- `/mochilas ver <jugador> <1-25>`: abre directamente la mochila ajena para agregar o retirar objetos.
+- `/mochilas reload`: recarga `config.yml` y `messages.yml` sin borrar los inventarios ya abiertos.
+- Permisos: `bastionbackpacks.admin.view` y `bastionbackpacks.reload` (OP por defecto).
+- Mantiene el menú v1.0.3 con cristal negro, los permisos de mochilas y el contenido de `plugins/BastionMCBackpacks/data/`.
+- Por seguridad no crea perfiles de jugadores desconocidos: el jugador debe haberse conectado al servidor alguna vez.
+- Puede haber inventarios abiertos mientras se usan los comandos; la edición es compartida en memoria y se guarda al cerrar.

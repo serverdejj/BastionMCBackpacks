@@ -58,6 +58,8 @@ backpack:
     '25': 54
 permissions:
   admin-bypass: 'bastionbackpacks.admin'
+  admin-view: 'bastionbackpacks.admin.view'
+  reload: 'bastionbackpacks.reload'
   # Edita los permisos si necesitas nombres distintos. Si omites alguno: bastionbackpacks.use.<numero>.
   nodes: {}
 data:
@@ -67,3 +69,6 @@ data:
   # Si se reduce el tamaño de una mochila que tiene objetos en slots superiores,
   # la ampliamos en memoria para evitar pérdida de objetos.
   protect-items-from-size-reduction: true
+
+admin-menu:
+  title: '&#55DDAA&lMochilas de &f{player}'

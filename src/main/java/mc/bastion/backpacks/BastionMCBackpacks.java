@@ -3,6 +3,7 @@ package mc.bastion.backpacks;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -31,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,9 +66,11 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
     }
 
     private static final class MenuHolder implements InventoryHolder {
-        final UUID player;
+        final UUID viewer;
+        final UUID target;
+        final boolean administrative;
         Inventory inventory;
-        MenuHolder(UUID player) { this.player = player; }
+        MenuHolder(UUID viewer, UUID target, boolean administrative) { this.viewer = viewer; this.target = target; this.administrative = administrative; }
         @Override public Inventory getInventory() { return inventory; }
     }
 
@@ -130,8 +134,37 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
                 .replace("{unlocked}", Integer.toString(unlocked)));
     }
 
-    private void tell(Player player, String key) {
-        player.sendMessage(color(messages.getString("prefix", "") + messages.getString(key, key)));
+    private void tell(CommandSender sender, String key) {
+        sender.sendMessage(color(messages.getString("prefix", "") + messages.getString(key, key)));
+    }
+
+    private void tell(CommandSender sender, String key, String target, int number) {
+        String raw = messages.getString("prefix", "") + messages.getString(key, key);
+        sender.sendMessage(color(raw.replace("{player}", target).replace("{number}", Integer.toString(number))));
+    }
+
+    private String adminPermission(String path, String fallback) {
+        return getConfig().getString(path, fallback);
+    }
+
+    private OfflinePlayer findKnownPlayer(String username) {
+        Player online = Bukkit.getPlayerExact(username);
+        if (online != null) return online;
+        for (OfflinePlayer candidate : Bukkit.getOfflinePlayers()) {
+            if (candidate.getName() != null && candidate.getName().equalsIgnoreCase(username)) return candidate;
+        }
+        return null; // Avoid generating a new empty profile for a name that never joined.
+    }
+
+    private String playerName(OfflinePlayer player) {
+        return player.getName() == null ? player.getUniqueId().toString() : player.getName();
+    }
+
+    private void reloadSettings() {
+        reloadConfig();
+        migrateMenuLayout();
+        messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
+        // Keep already opened inventories alive: never clear the cache during reload.
     }
 
     private Material material(String key, String fallback) {
@@ -174,11 +207,16 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
     }
 
     private void showMenu(Player p) {
+        showMenu(p, p.getUniqueId(), p.getName(), false);
+    }
+
+    private void showMenu(Player p, UUID target, String targetName, boolean administrative) {
         int guiSize = getConfig().getInt("menu.size", 54);
         if (guiSize < 27 || guiSize > 54 || guiSize % 9 != 0) guiSize = 54;
-        MenuHolder holder = new MenuHolder(p.getUniqueId());
+        MenuHolder holder = new MenuHolder(p.getUniqueId(), target, administrative);
         holder.inventory = Bukkit.createInventory(holder, guiSize,
-                render(getConfig().getString("menu.title", "Mochilas"), 0, 0, unlocked(p)));
+                render((administrative ? getConfig().getString("admin-menu.title", "Mochilas de {player}") : getConfig().getString("menu.title", "Mochilas"))
+                    .replace("{player}", targetName), 0, 0, unlocked(p)));
         Inventory menu = holder.inventory;
         if (getConfig().getBoolean("menu.filler.enabled", true)) {
             ItemStack filler = new ItemStack(material("menu.filler.material", "BLACK_STAINED_GLASS_PANE"));
@@ -190,7 +228,7 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
         if (slots.size() < MAX) slots = NEW_MENU_SLOTS;
         for (int i = 1; i <= MAX; i++) {
             int slot = slots.get(i - 1);
-            if (slot >= 0 && slot < guiSize) menu.setItem(slot, menuItem(permitted(p, i), i));
+            if (slot >= 0 && slot < guiSize) menu.setItem(slot, menuItem(administrative || permitted(p, i), i));
         }
         p.openInventory(menu);
     }
@@ -207,18 +245,18 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
         return new File(folder, number + ".yml");
     }
 
-    private Inventory load(Player player, int number) {
-        Map<Integer, Inventory> byNumber = loaded.computeIfAbsent(player.getUniqueId(), x -> new HashMap<>());
+    private Inventory load(UUID target, int number) {
+        Map<Integer, Inventory> byNumber = loaded.computeIfAbsent(target, x -> new HashMap<>());
         Inventory previous = byNumber.get(number);
         if (previous != null) return previous;
-        File file = file(player.getUniqueId(), number);
+        File file = file(target, number);
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         int desiredSize = size(number);
         int savedSize = yaml.getInt("size", desiredSize);
         // Prevent truncating saved inventory when configured capacity is decreased.
         if (getConfig().getBoolean("data.protect-items-from-size-reduction", true)
                 && savedSize > desiredSize && savedSize <= 54 && savedSize % 9 == 0) desiredSize = savedSize;
-        BackpackHolder holder = new BackpackHolder(player.getUniqueId(), number);
+        BackpackHolder holder = new BackpackHolder(target, number);
         holder.inventory = Bukkit.createInventory(holder, desiredSize,
                 render(getConfig().getString("backpack.title", "Mochila #{number}"), number, desiredSize, 0));
         List<?> items = yaml.getList("items", Collections.emptyList());
@@ -264,10 +302,38 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player p)) {
-            sender.sendMessage(color(messages.getString("prefix", "") + messages.getString("only-players", "Solo jugadores")));
+        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission(adminPermission("permissions.reload", "bastionbackpacks.reload"))) {
+                tell(sender, "no-permission"); return true;
+            }
+            // Save current data first; reload changes configuration but never discards inventories.
+            saveAll();
+            reloadSettings();
+            tell(sender, "reloaded");
             return true;
         }
+        if (args.length >= 1 && (args[0].equalsIgnoreCase("ver") || args[0].equalsIgnoreCase("see"))) {
+            if (!sender.hasPermission(adminPermission("permissions.admin-view", "bastionbackpacks.admin.view"))) {
+                tell(sender, "no-permission"); return true;
+            }
+            if (!(sender instanceof Player p)) { tell(sender, "only-players"); return true; }
+            if (args.length < 2 || args.length > 3) { tell(sender, "admin-usage"); return true; }
+            OfflinePlayer target = findKnownPlayer(args[1]);
+            if (target == null) { tell(sender, "unknown-player"); return true; }
+            String targetName = playerName(target);
+            if (args.length == 2) {
+                showMenu(p, target.getUniqueId(), targetName, true);
+                return true;
+            }
+            int number;
+            try { number = Integer.parseInt(args[2]); }
+            catch (NumberFormatException ex) { tell(sender, "invalid-number"); return true; }
+            if (number < 1 || number > MAX) { tell(sender, "invalid-number"); return true; }
+            p.openInventory(load(target.getUniqueId(), number));
+            tell(sender, "admin-opened", targetName, number);
+            return true;
+        }
+        if (!(sender instanceof Player p)) { tell(sender, "only-players"); return true; }
         if (args.length == 0) { showMenu(p); return true; }
         if (args.length != 1) { tell(p, "invalid-number"); return true; }
         int number;
@@ -275,29 +341,44 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
         catch (NumberFormatException ex) { tell(p, "invalid-number"); return true; }
         if (number < 1 || number > MAX) { tell(p, "invalid-number"); return true; }
         if (!permitted(p, number)) { tell(p, "locked"); return true; }
-        p.openInventory(load(p, number));
+        p.openInventory(load(p.getUniqueId(), number));
         return true;
     }
 
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length != 1 || !(sender instanceof Player p)) return Collections.emptyList();
-        return java.util.stream.IntStream.rangeClosed(1, MAX)
-                .filter(n -> permitted(p, n))
-                .mapToObj(Integer::toString)
-                .filter(s -> s.startsWith(args[0]))
-                .collect(Collectors.toList());
+        if (args.length == 1) {
+            List<String> options = new ArrayList<>();
+            if (sender instanceof Player p) {
+                for (int n = 1; n <= MAX; ++n) if (permitted(p, n)) options.add(Integer.toString(n));
+            }
+            if (sender.hasPermission(adminPermission("permissions.reload", "bastionbackpacks.reload"))) options.add("reload");
+            if (sender.hasPermission(adminPermission("permissions.admin-view", "bastionbackpacks.admin.view"))) options.add("ver");
+            return options.stream().filter(x -> x.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT))).collect(Collectors.toList());
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("ver") || args[0].equalsIgnoreCase("see"))
+                && sender.hasPermission(adminPermission("permissions.admin-view", "bastionbackpacks.admin.view"))) {
+            return Bukkit.getOnlinePlayers().stream().map(Player::getName)
+                    .filter(x -> x.toLowerCase(Locale.ROOT).startsWith(args[1].toLowerCase(Locale.ROOT)))
+                    .collect(Collectors.toList());
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("ver") || args[0].equalsIgnoreCase("see"))
+                && sender.hasPermission(adminPermission("permissions.admin-view", "bastionbackpacks.admin.view"))) {
+            return java.util.stream.IntStream.rangeClosed(1, MAX).mapToObj(Integer::toString)
+                    .filter(x -> x.startsWith(args[2])).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 
     @EventHandler public void onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player p)) return;
         Inventory top = event.getView().getTopInventory();
-        if (top.getHolder() instanceof MenuHolder holder && holder.player.equals(p.getUniqueId())) {
+        if (top.getHolder() instanceof MenuHolder holder && holder.viewer.equals(p.getUniqueId())) {
             event.setCancelled(true);
             if (event.getClickedInventory() != top) return;
             int number = numberForSlot(event.getRawSlot());
             if (number < 1) return;
-            if (!permitted(p, number)) { tell(p, "locked"); return; }
-            p.openInventory(load(p, number));
+            if (!holder.administrative && !permitted(p, number)) { tell(p, "locked"); return; }
+            p.openInventory(load(holder.target, number));
         }
     }
 
@@ -310,11 +391,21 @@ public final class BastionMCBackpacks extends JavaPlugin implements Listener, Co
             if (!store(holder.player, holder.number, event.getInventory())) {
                 if (event.getPlayer() instanceof Player p) tell(p, "data-error");
             }
+            Bukkit.getScheduler().runTask(this, () -> evictOfflineIfUnused(holder.player));
         }
     }
 
     @EventHandler public void onQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
+        savePlayer(uuid);
+        // Do not evict an inventory another administrator is currently editing.
+        Bukkit.getScheduler().runTask(this, () -> evictOfflineIfUnused(uuid));
+    }
+
+    private void evictOfflineIfUnused(UUID uuid) {
+        Map<Integer, Inventory> entries = loaded.get(uuid);
+        if (entries == null || Bukkit.getPlayer(uuid) != null) return;
+        for (Inventory inventory : entries.values()) if (!inventory.getViewers().isEmpty()) return;
         savePlayer(uuid);
         loaded.remove(uuid);
     }

@@ -1,5 +1,5 @@
 name: BastionMCBackpacks
-version: '1.0.1'
+version: '1.0.4'
 main: mc.bastion.backpacks.BastionMCBackpacks
 api-version: '1.21'
 author: BASTION MC
@@ -7,7 +7,7 @@ description: 25 mochilas persistentes, GUI configurable y permisos LuckPerms.
 commands:
   pv:
     description: Abre tus mochilas o una mochila por número.
-    usage: /pv [1-25]
+    usage: /pv [1-25] | /mochilas ver <jugador> [1-25] | /mochilas reload
     aliases: [mochila, mochilas]
 permissions:
   bastionbackpacks.admin:
@@ -88,3 +88,9 @@ permissions:
   bastionbackpacks.use.25:
     description: Permite usar la mochila 25.
     default: false
+  bastionbackpacks.admin.view:
+    description: Ver y editar las 25 mochilas de otros jugadores.
+    default: op
+  bastionbackpacks.reload:
+    description: Recargar config.yml y messages.yml.
+    default: op
