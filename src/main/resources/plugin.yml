@@ -1,0 +1,90 @@
+name: BastionMCBackpacks
+version: '1.0.0'
+main: mc.bastion.backpacks.BastionMCBackpacks
+api-version: '1.21'
+author: BASTION MC
+description: 25 mochilas persistentes, GUI configurable y permisos LuckPerms.
+commands:
+  pv:
+    description: Abre tus mochilas o una mochila por número.
+    usage: /pv [1-25]
+    aliases: [mochila, mochilas]
+permissions:
+  bastionbackpacks.admin:
+    description: Acceso administrativo a todas las mochilas.
+    default: op
+  bastionbackpacks.use.1:
+    description: Permite usar la mochila 1.
+    default: true
+  bastionbackpacks.use.2:
+    description: Permite usar la mochila 2.
+    default: true
+  bastionbackpacks.use.3:
+    description: Permite usar la mochila 3.
+    default: true
+  bastionbackpacks.use.4:
+    description: Permite usar la mochila 4.
+    default: false
+  bastionbackpacks.use.5:
+    description: Permite usar la mochila 5.
+    default: false
+  bastionbackpacks.use.6:
+    description: Permite usar la mochila 6.
+    default: false
+  bastionbackpacks.use.7:
+    description: Permite usar la mochila 7.
+    default: false
+  bastionbackpacks.use.8:
+    description: Permite usar la mochila 8.
+    default: false
+  bastionbackpacks.use.9:
+    description: Permite usar la mochila 9.
+    default: false
+  bastionbackpacks.use.10:
+    description: Permite usar la mochila 10.
+    default: false
+  bastionbackpacks.use.11:
+    description: Permite usar la mochila 11.
+    default: false
+  bastionbackpacks.use.12:
+    description: Permite usar la mochila 12.
+    default: false
+  bastionbackpacks.use.13:
+    description: Permite usar la mochila 13.
+    default: false
+  bastionbackpacks.use.14:
+    description: Permite usar la mochila 14.
+    default: false
+  bastionbackpacks.use.15:
+    description: Permite usar la mochila 15.
+    default: false
+  bastionbackpacks.use.16:
+    description: Permite usar la mochila 16.
+    default: false
+  bastionbackpacks.use.17:
+    description: Permite usar la mochila 17.
+    default: false
+  bastionbackpacks.use.18:
+    description: Permite usar la mochila 18.
+    default: false
+  bastionbackpacks.use.19:
+    description: Permite usar la mochila 19.
+    default: false
+  bastionbackpacks.use.20:
+    description: Permite usar la mochila 20.
+    default: false
+  bastionbackpacks.use.21:
+    description: Permite usar la mochila 21.
+    default: false
+  bastionbackpacks.use.22:
+    description: Permite usar la mochila 22.
+    default: false
+  bastionbackpacks.use.23:
+    description: Permite usar la mochila 23.
+    default: false
+  bastionbackpacks.use.24:
+    description: Permite usar la mochila 24.
+    default: false
+  bastionbackpacks.use.25:
+    description: Permite usar la mochila 25.
+    default: false

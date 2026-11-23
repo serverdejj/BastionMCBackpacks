@@ -1,0 +1,7 @@
+prefix: '&#55DDAA&lBASTION MOCHILAS &8» &r'
+only-players: '&cEste comando solo lo pueden usar jugadores.'
+invalid-number: '&cUsa /pv <numero del 1 al 25>.'
+locked: '&cSube de rango para usar mas mochilas'
+open: '&aAbriendo mochila &e#{number}&a...'
+data-error: '&cNo se pudo cargar o guardar tu mochila. Contacta a un administrador.'
+reloading: '&eLa configuracion de mochilas se carga al iniciar el servidor.'
